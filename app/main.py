@@ -1,15 +1,11 @@
 import sys
 
-import pandas as pd
-from PyQt5.QtGui import QIcon, QCursor
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QTextEdit, QMessageBox
 from PyQt5.QtCore import Qt, QTimer
-from openpyxl.styles import Border, Font, Side
+from PyQt5.QtGui import QIcon, QCursor
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QTextEdit
 from qt_material import apply_stylesheet
 
-import colors
 import parser
-# import parser_2 as parser
 
 
 class FileUploader(QWidget):
@@ -80,7 +76,8 @@ class FileUploader(QWidget):
         if self.process_button.isEnabled():
             self.process_button.setStyleSheet("background-color: #66B173; color: white; border: none;")
         else:
-            self.process_button.setStyleSheet("background-color: lightgray; color: darkgray; border: none;")  # Серый фон для недоступной кнопки
+            self.process_button.setStyleSheet(
+                "background-color: lightgray; color: darkgray; border: none;")  # Серый фон для недоступной кнопки
 
     def showNotification(self, message, success):
         notification = QWidget(self)
@@ -94,7 +91,7 @@ class FileUploader(QWidget):
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
 
-        notification.resize(self.width(), (10 * self.height())//100)  # Установить ширину по ширине родительского окна
+        notification.resize(self.width(), (10 * self.height()) // 100)  # Установить ширину по ширине родительского окна
         notification.show()
 
         QTimer.singleShot(2000, notification.close)  # Закрыть уведомление через 2 секунды
@@ -109,41 +106,15 @@ class FileUploader(QWidget):
         processed_file_content = parser.create_report(result)
 
         options = QFileDialog.Options()
-        save_file_name, _ = QFileDialog.getSaveFileName(self, "Сохранить файл", "", "Текстовые файлы (*.xlsx);;Все файлы (*)", options=options)
+        save_file_name, _ = QFileDialog.getSaveFileName(self, "Сохранить файл", "",
+                                                        "Текстовые файлы (*.xlsx);;Все файлы (*)", options=options)
         try:
-            # # Установка максимальной ширины столбца
-            pd.set_option('max_colwidth', 300)
-            # Сохранение DataFrame в CSV
-            with pd.ExcelWriter(f"{save_file_name}", engine='openpyxl') as writer:
-                processed_file_content.to_excel(writer, sheet_name='Report', index=False, header=False)
-                worksheet = writer.sheets['Report']
-                # Применяем стили к заголовкам
-                bold_font = Font(bold=True)
-                thin_border = Border(left=Side(style='thin'),
-                                     right=Side(style='thin'),
-                                     top=Side(style='thin'),
-                                     bottom=Side(style='thin'))
-
-                # Применяем цвет к заголовкам (первая строка)
-                for col in worksheet.iter_cols(min_row=1, max_row=1):  # Только первая строка
-                    for cell in col:
-                        colour = colors.header_colours(cell.value)
-                        cell.fill = colour
-                        cell.font = bold_font  # Применяем жирный шрифт к заголовкам
-                        cell.border = thin_border  # Применяем границы к заголовкам
-
-                # Устанавливаем ширину для первых двух столбцов
-                for column in worksheet.iter_cols(min_row=1, max_row=1):
-                    column_letter = column[0].column_letter
-                    if column[0].column <= 2:  # Для первых двух столбцов
-                        worksheet.column_dimensions[column_letter].width = 40
-                    else:  # Для остальных столбцов
-                        worksheet.column_dimensions[column_letter].width = 30
-
+            parser.colorize_and_format_file(iterated_file=processed_file_content,
+                                            file_name=save_file_name)
             self.showNotification("Файл сохранен успешно!", success=True)
         except BaseException as e:
-            err = e
             self.showNotification("Ошибка при сохранении файла (убедитесь в корректности формата).", success=False)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
